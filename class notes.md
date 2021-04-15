@@ -64,21 +64,62 @@ Pieter Benjamin (pieterb@uw.edu)
 - Even after choosing a decent system, you can still whiff the implementation
 - At large scale, different parties may have different goals/optimizations which might be misaligned  
 ## Buffer Overflows
-## Miscellaneous and Principles
+- When taking in user input, if you accept more than you allocated space for they may be able to overwrite your stack frame
+  - Doing so carefully can hand control of the program over to the potentially (likely?) malicious user
+```c
+void mycopy (char *input) {
+  char buffer [512];
+  int i;
+  for (i = 0' i <= 512; i++)
+    buffer[i] = input[i];
+}
+```
+- The above example is off by one, and one byte likely will not change the return address but can change the pointer to the previous stack frame that is stored next to the return address (in a little endian architecture)
+  - In a little endian architecture this can make a difference of 256 addresses
+  - 0x00...000[...] ... [buf][FP][RET][str][caller's frame]...[...]0xFF...FFF
+  - Above, the stack grows down to the left. The only arg to the function (str) comes before the return address, which is followed by buffer. If an attacker manages to go past the bounds of the buffer into the return address, they can change an entire byte of data in FP.
+
+## Format Strings
+- Enable a variable number of arguments
+```c
+// Proper use (static string)
+int foo = 42;
+printf("foo = %d in decimal, %X in hex", foo, foo);
+// Improper use (variable string)
+char buf[14] = "Hello, world!";
+printf(buf);
+// Should've used printf("%g", buf)
+```
+- Lower level functions such as printf can advance the stack and get hands on with the OS - you *really* don't want these to be messed up
+```c
+// Proper/well formed
+printf("Numbers: %d, %d", 1, 2);
+// Improper/exploit
+printf("Numbers: %d, %d");
+```
+- In the above example, the proper example will "fetch" the numbers 1 and 2 off the stack and print them. The improper one will fetch some random data off the stack frame of printf - privilleged information we don't want the user to have their hands on!
+- Extending this example:
+```c
+char buf[16] = "here is a string: %s";
+printf(buf);
+```
+- The "%n" format string will look at the number of characters written by printf, and write them to the address stored at the next arg/element on the stack.
+- Historically used for reasons such as measuring how much you've written to a network.
+```c
+// Writes 14 into myVar
+printf("Overflow this!%n", &myVar);
+// Writes somewhere bad, could even overwrite information
+// into printfs internal stack frame
+char buf[16] = "Overflow this!%n";
+printf(buf);
+```
+- Good pausing point to remind the reader that different compilers/architectures/operating systems may see different effects
+
+## Smashing the Stack for Fun and Profit
+## Exploiting Format String Vulnerabilities
 
 # Cryptography
-## Symmetric Encryptions
-## Hash Functions and MACs
-## Asymmetric Key Cryptography
 
-# Web Security
-## Overview and Browser Security Model
-## Certificates
-## Web Application Security
-## Web Privacy
-## Authentication
-## Alex Gantman
-## Mobile Platform Security
-## Usable Security
-## Anonymity
-## Side Channels
+## Guest Lecture: Genie Gebhart
+
+## Symmetric Encryption
