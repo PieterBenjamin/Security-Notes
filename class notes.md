@@ -114,8 +114,30 @@ char buf[16] = "Overflow this!%n";
 printf(buf);
 ```
 - Good pausing point to remind the reader that different compilers/architectures/operating systems may see different effects
-
-## Smashing the Stack for Fun and Profit
+- Can mark the regions of memory allocated as writeable memory as non-executable to defend against buffer overflow  
+  - Good general policy, prevents code injection
+  - Attackers can still corrupt the stack, function pointers, or critical data on the heap
+  - Can also jump to already existing poorly behaved code
+- return-to-libc
+  - Overwrite saved RET with address of a library routine and arrange stack to look like arguments
+- Instead of jumping to the start of a function, we can just overwrite the RET to an arbitrary instruction
+  - Can chain RETs together which is a Turing-complete language (Shacham et al.)
+  - Called return oriented programming
+  - Basically jump to a place, execute a small snippet, ret, snippet, etc.
+- Another defense is to add "canaries" to the stack frame which have unique values (such as a null terminating byte to stop strcpy) which are checked at the start/end of the execution of the method
+## [Smashing the Stack for Fun and Profit](https://avicoder.me/2016/02/01/smashsatck-revived/)
+- Programs are split into three parts
+- Text
+  - Fixed by the program, includes instructions and read-only data
+  - Cannot write to this portion of memory without a segmentation fault
+- Data
+  - Initialized and uninitialized data
+  - Static variables
+  - New memory added between the data and stack segments
+- Stack
+  - EBP is the frame pointer on intel - which keeps track of the top of the current frame
+  - Local variables and parameters can be stored with relative distances from the frame pointer
+  -
 ## Exploiting Format String Vulnerabilities
 
 # Cryptography
